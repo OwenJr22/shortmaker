@@ -44,11 +44,17 @@ jobs:
           chmod +x ffmpeg_bin/*
           ffmpeg_bin/ffmpeg -hide_banner -filters | grep -E " ass " || (echo "FFmpeg sans libass" && exit 1)
 
+      - name: Préparer le modèle de visage
+        run: |
+          mkdir -p models
+          python -c "import cv2, shutil; shutil.copy(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml', 'models/')"
+          ls -l models
+
       - name: Fabriquer l'app
         run: >
           pyinstaller --noconfirm --clean --windowed --name ShortMaker
           --osx-bundle-identifier com.shortmaker.app
-          --add-data "static:static" --add-data "fonts:fonts"
+          --add-data "static:static" --add-data "fonts:fonts" --add-data "models:models"
           --add-binary "ffmpeg_bin/ffmpeg:ffmpeg" --add-binary "ffmpeg_bin/ffprobe:ffmpeg"
           --collect-all faster_whisper --collect-all ctranslate2 --collect-all onnxruntime
           --collect-data cv2 --collect-submodules yt_dlp

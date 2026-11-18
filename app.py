@@ -463,35 +463,69 @@ def media(pid, name):
 
 
 def selftest():
-    """Vérifie que tout fonctionne (utilisé par GitHub après chaque fabrication du .exe)."""
+    """Vérifie que tout fonctionne (utilisé par GitHub après chaque fabrication de l'app).
+    Chaque étape est testée même si une précédente échoue, pour tout voir en une fois."""
     import tempfile
     from pipeline import reframe
     from pipeline.utils import run
-    check_ffmpeg()
-    print("ffmpeg OK")
-    cv2, det = reframe._face_detector()
-    assert cv2 is not None and det is not None, "détecteur de visage OpenCV introuvable"
-    print("OpenCV + détecteur de visage OK")
-    import yt_dlp  # noqa: F401
-    from yt_dlp.utils import download_range_func
-    download_range_func(None, [(10, 20)])
-    print("yt-dlp OK", yt_dlp.version.__version__)
+    failures = []
+
+    def step(name, fn):
+        try:
+            info = fn()
+            print(f"✅ {name}" + (f" — {info}" if info else ""), flush=True)
+        except Exception as exc:
+            traceback.print_exc()
+            print(f"❌ {name} — {exc}", flush=True)
+            failures.append(name)
+
     tmp = Path(tempfile.mkdtemp())
     src = tmp / "src.mp4"
-    run(["ffmpeg", "-y", "-f", "lavfi", "-i", "testsrc2=s=1280x720:r=30:d=6", "-f", "lavfi",
-         "-i", "sine=f=440:d=6", "-c:v", "libx264", "-c:a", "aac", "-shortest", str(src)], "test")
-    tr = transcribe(src, tmp, "tiny", "fr")
-    print("Whisper OK", len(tr["segments"]), "segment(s)")
-    words = [{"start": 1 + i * 0.4, "end": 1.35 + i * 0.4, "word": w}
-             for i, w in enumerate("Ceci est un test de sous-titres animés".split())]
-    tr = {"segments": [{"start": 1, "end": 4, "text": "", "words": words}]}
-    for style, mode in (("karaoke", "face"), ("hormozi", "blur")):
-        out = tmp / f"{style}.mp4"
-        render_clip(src, tr, {"start": 0.5, "end": 5, "hook": "Test"}, out,
-                    {"style": style, "reframe": mode}, tmp)
-        assert out.exists() and out.stat().st_size > 10000, f"rendu {style} vide"
-        print(f"Rendu {style}/{mode} OK")
+
+    def t_ffmpeg():
+        check_ffmpeg()
+        run(["ffmpeg", "-y", "-f", "lavfi", "-i", "testsrc2=s=1280x720:r=30:d=6", "-f", "lavfi",
+             "-i", "sine=f=440:d=6", "-c:v", "libx264", "-c:a", "aac", "-shortest", str(src)], "test")
+        return shutil.which("ffmpeg")
+
+    def t_opencv():
+        import cv2
+        cv2_, det = reframe._face_detector()
+        assert det is not None, "modèle de visage introuvable"
+        return f"OpenCV {cv2.__version__}"
+
+    def t_ytdlp():
+        import yt_dlp
+        from yt_dlp.utils import download_range_func
+        download_range_func(None, [(10, 20)])
+        return yt_dlp.version.__version__
+
+    def t_whisper():
+        tr = transcribe(src, tmp, "tiny", "fr")
+        return f"{len(tr['segments'])} segment(s)"
+
+    def t_render(style, mode):
+        def fn():
+            words = [{"start": 1 + i * 0.4, "end": 1.35 + i * 0.4, "word": w}
+                     for i, w in enumerate("Ceci est un test de sous-titres animés".split())]
+            tr = {"segments": [{"start": 1, "end": 4, "text": "", "words": words}]}
+            out = tmp / f"{style}.mp4"
+            render_clip(src, tr, {"start": 0.5, "end": 5, "hook": "Test"}, out,
+                        {"style": style, "reframe": mode}, tmp)
+            assert out.exists() and out.stat().st_size > 10000, "fichier vide"
+            return f"{out.stat().st_size // 1024} Ko"
+        return fn
+
+    step("FFmpeg", t_ffmpeg)
+    step("Détection de visage", t_opencv)
+    step("yt-dlp", t_ytdlp)
+    step("Whisper", t_whisper)
+    step("Rendu karaoké + suivi visage", t_render("karaoke", "face"))
+    step("Rendu Hormozi + fond flou", t_render("hormozi", "blur"))
     shutil.rmtree(tmp, ignore_errors=True)
+    if failures:
+        print("SELFTEST ÉCHEC :", ", ".join(failures))
+        sys.exit(1)
     print("SELFTEST OK")
 
 

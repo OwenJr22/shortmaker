@@ -1,5 +1,7 @@
 """Recadrage vertical 9:16 qui suit le visage de la personne qui parle."""
 import os
+import sys
+from pathlib import Path
 
 import numpy as np
 
@@ -8,14 +10,26 @@ DEAD_ZONE = 0.07        # la caméra ne bouge que si le visage s'écarte de plus
 MAX_KEYFRAMES = 90
 
 
+CASCADE = "haarcascade_frontalface_default.xml"
+
+
+def _cascade_path(cv2):
+    """Cherche le modèle de visage : d'abord celui fourni avec l'app, sinon celui d'OpenCV."""
+    here = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent.parent))
+    candidates = [here / "models" / CASCADE]
+    hc = getattr(getattr(cv2, "data", None), "haarcascades", None)
+    if hc:
+        candidates.append(Path(hc) / CASCADE)
+    return next((str(p) for p in candidates if p.exists()), None)
+
+
 def _face_detector():
     try:
         import cv2
     except ImportError:
         return None, None
-    path = os.path.join(getattr(getattr(cv2, "data", None), "haarcascades", ""),
-                        "haarcascade_frontalface_default.xml")
-    if not os.path.exists(path):
+    path = _cascade_path(cv2)
+    if not path:
         return cv2, None
     det = cv2.CascadeClassifier(path)
     return cv2, (None if det.empty() else det)
