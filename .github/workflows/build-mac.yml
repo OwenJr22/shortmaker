@@ -10,7 +10,17 @@ permissions:
 
 jobs:
   mac:
-    runs-on: macos-latest   # Mac Apple Silicon (M1, M2, M3, M4…)
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-latest      # Apple Silicon (M1, M2, M3, M4…)
+            arch: arm64
+            label: AppleSilicon
+          - runner: macos-15-intel    # Intel : marche aussi sur Apple Silicon via Rosetta
+            arch: amd64
+            label: Intel
+    runs-on: ${{ matrix.runner }}
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
@@ -24,11 +34,11 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt pyinstaller
 
-      - name: Télécharger FFmpeg (Apple Silicon)
+      - name: Télécharger FFmpeg (${{ matrix.label }})
         run: |
           mkdir -p ffmpeg_bin
           for tool in ffmpeg ffprobe; do
-            curl -fsSL -o "$tool.zip" "https://ffmpeg.martin-riedl.de/redirect/latest/macos/arm64/release/$tool.zip"
+            curl -fsSL -o "$tool.zip" "https://ffmpeg.martin-riedl.de/redirect/latest/macos/${{ matrix.arch }}/release/$tool.zip"
             unzip -o -q "$tool.zip" -d ffmpeg_bin
           done
           chmod +x ffmpeg_bin/*
@@ -51,14 +61,14 @@ jobs:
         run: |
           cp LISEZMOI-MAC.txt dist/LISEZMOI.txt
           mkdir -p pack && cp -R dist/ShortMaker.app dist/LISEZMOI.txt pack/
-          ditto -c -k --sequesterRsrc pack ShortMaker-Mac.zip
-          ls -lh ShortMaker-Mac.zip
+          ditto -c -k --sequesterRsrc pack ShortMaker-Mac-${{ matrix.label }}.zip
+          ls -lh ShortMaker-Mac-*.zip
 
       - name: Publier le téléchargement
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ github.run_number }}
           name: ShortMaker Mac (version ${{ github.run_number }})
-          body: "Télécharge **ShortMaker-Mac.zip** ci-dessous, puis suis LISEZMOI.txt."
-          files: ShortMaker-Mac.zip
+          body: "Mac M1/M2/M3/M4 : prends **ShortMaker-Mac-AppleSilicon.zip** (ou la version Intel si c'est la seule disponible, elle marche aussi). Mac Intel : **ShortMaker-Mac-Intel.zip**. Puis suis LISEZMOI.txt."
+          files: ShortMaker-Mac-${{ matrix.label }}.zip
           make_latest: true
