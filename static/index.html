@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ShortMaker</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎬</text></svg>">
+<style>
+  :root{
+    --bg:#0e0f13; --panel:#16181f; --panel2:#1d2029; --line:#2a2e3a; --txt:#e9ebf1; --mute:#8b90a0;
+    --acc:#ffd23f; --acc2:#ff5470; --ok:#3ddc97; --r:12px;
+  }
+  *{box-sizing:border-box}
+  a{color:inherit;text-decoration:none}
+  body{margin:0;font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--txt)}
+  button,input,select,textarea{font:inherit;color:inherit}
+  button{cursor:pointer;border:0;border-radius:8px;padding:8px 14px;background:var(--panel2);border:1px solid var(--line)}
+  button:hover{border-color:#444a5c}
+  button.primary{background:var(--acc);color:#111;border-color:var(--acc);font-weight:650}
+  button.primary:disabled{opacity:.45;cursor:not-allowed}
+  button.ghost{background:none;border-color:transparent;color:var(--mute);padding:4px 8px}
+  button.ghost:hover{color:var(--txt)}
+  input,select,textarea{background:#0f1117;border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--acc)}
+  label{font-size:12px;color:var(--mute);display:block;margin-bottom:4px}
+  header{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-bottom:1px solid var(--line)}
+  .logo{font-weight:800;font-size:18px;letter-spacing:-.3px}
+  .logo span{color:var(--acc)}
+  .layout{display:grid;grid-template-columns:270px 1fr;min-height:calc(100vh - 57px)}
+  aside{border-right:1px solid var(--line);padding:16px;display:flex;flex-direction:column;gap:14px}
+  main{padding:20px;overflow:auto}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:16px}
+  .card h3{margin:0 0 12px;font-size:14px}
+  .row{display:flex;gap:8px;align-items:center}
+  .grow{flex:1}
+  .mute{color:var(--mute)} .small{font-size:12px}
+  .plist{display:flex;flex-direction:column;gap:4px}
+  .pitem{padding:9px 10px;border-radius:8px;cursor:pointer;display:flex;justify-content:space-between;gap:6px;align-items:center}
+  .pitem:hover{background:var(--panel2)} .pitem.active{background:var(--panel2);outline:1px solid var(--line)}
+  .pitem .t{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .dot{width:8px;height:8px;border-radius:50%;flex:none;background:var(--mute)}
+  .dot.ready{background:var(--ok)} .dot.error{background:var(--acc2)} .dot.busy{background:var(--acc);animation:pulse 1s infinite}
+  @keyframes pulse{50%{opacity:.3}}
+  .bar{height:6px;background:#0f1117;border-radius:9px;overflow:hidden;margin-top:8px}
+  .bar>i{display:block;height:100%;background:var(--acc);transition:width .4s}
+  .grid2{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:18px;align-items:start}
+  video.src{width:100%;border-radius:10px;background:#000;max-height:46vh}
+  .transcript{max-height:38vh;overflow:auto;margin-top:12px;padding:12px;background:#0f1117;border-radius:10px;line-height:1.9;user-select:text}
+  .transcript .w{cursor:pointer;border-radius:4px;padding:1px 1px}
+  .transcript .w:hover{background:#2a2e3a}
+  .transcript .w.now{background:var(--acc);color:#111}
+  .transcript .w.inclip{text-decoration:underline;text-decoration-color:var(--acc);text-underline-offset:4px}
+  .transcript .ts{color:var(--mute);font-size:11px;margin-right:6px;font-variant-numeric:tabular-nums}
+  .clip{border:1px solid var(--line);border-radius:10px;padding:12px;background:var(--panel2);display:flex;flex-direction:column;gap:8px}
+  .clip.sel{border-color:var(--acc)}
+  .clip .head{display:flex;gap:8px;align-items:center}
+  .clip .score{font-size:11px;font-weight:700;padding:2px 7px;border-radius:20px;background:#2e2a12;color:var(--acc)}
+  .clip .reason{font-size:12px;color:var(--mute)}
+  .times{display:grid;grid-template-columns:1fr auto 1fr auto;gap:6px;align-items:center}
+  .times input{font-variant-numeric:tabular-nums}
+  .clips{display:flex;flex-direction:column;gap:10px;max-height:52vh;overflow:auto;padding-right:2px}
+  .opts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .toggle{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--txt)}
+  .toggle input{width:auto}
+  .outs{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
+  .out video{width:100%;aspect-ratio:9/16;background:#000;border-radius:10px}
+  .out .t{font-weight:600;margin:6px 0 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .err{background:#2b1218;border:1px solid #5c2130;color:#ffb3c0;padding:10px 12px;border-radius:8px;white-space:pre-wrap;font-size:12px}
+  .empty{display:grid;place-items:center;height:70vh;text-align:center;color:var(--mute)}
+  .empty b{color:var(--txt);font-size:20px;display:block;margin-bottom:6px}
+  .modal{position:fixed;inset:0;background:#000a;display:none;place-items:center;z-index:9}
+  .modal.open{display:grid}
+  .modal .card{width:min(460px,92vw);display:flex;flex-direction:column;gap:12px}
+  .floating{position:fixed;display:none;z-index:5}
+  .section-title{display:flex;justify-content:space-between;align-items:center;margin:0 0 12px}
+  .section-title h3{margin:0}
+  .stack{display:flex;flex-direction:column;gap:18px}
+  input[type=color]{padding:2px;height:38px}
+  @media (max-width:1000px){.grid2{grid-template-columns:1fr}.layout{grid-template-columns:1fr}aside{border-right:0;border-bottom:1px solid var(--line)}}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">Short<span>Maker</span></div>
+  <div class="row">
+    <button class="ghost" id="btnReveal" style="display:none" onclick="api('/api/reveal',{method:'POST'})">📂 Mes fichiers</button>
+    <button class="ghost" onclick="openSettings()">⚙️ Réglages</button>
+    <button class="ghost" id="btnQuit" style="display:none" onclick="quitApp()">⏻ Quitter</button>
+  </div>
+</header>
+
+<div class="layout">
+  <aside>
+    <div class="card">
+      <h3>Nouvelle vidéo</h3>
+      <input id="url" placeholder="Lien YouTube, Twitch, Kick…" onkeydown="if(event.key==='Enter')importUrl()">
+      <details style="margin-top:8px"><summary class="small mute" style="cursor:pointer">Seulement un extrait (VOD longue)</summary>
+        <div class="row" style="margin-top:6px">
+          <input id="r_start" placeholder="De 1:02:30"><input id="r_end" placeholder="À 1:30:00">
+        </div></details>
+      <div class="row" style="margin-top:8px">
+        <button class="primary grow" onclick="importUrl()">Importer</button>
+        <button onclick="document.getElementById('file').click()" title="Importer un fichier vidéo">📁 Fichier</button>
+      </div>
+      <input type="file" id="file" accept="video/*" hidden onchange="importFile(this.files[0])">
+      <div id="upload" class="small mute" style="margin-top:8px"></div>
+    </div>
+    <div>
+      <div class="small mute" style="margin:0 4px 6px">Mes vidéos</div>
+      <div id="plist" class="plist"></div>
+    </div>
+  </aside>
+  <main id="main">
+    <div class="empty"><div><b>Colle un lien YouTube, Twitch ou Kick pour commencer</b>L'app télécharge la vidéo, la transcrit, puis tu choisis les moments à transformer en shorts.</div></div>
+  </main>
+</div>
+
+<button id="selBtn" class="primary floating" onmousedown="event.preventDefault()" onclick="clipFromSelection()">✂️ Créer un clip</button>
+
+<div class="modal" id="settings">
+  <div class="card">
+    <h3 style="margin:0">Réglages</h3>
+    <div>
+      <label>Clé API Claude (pour les suggestions IA)</label>
+      <input id="s_key" type="password" placeholder="sk-ant-…">
+      <div class="small mute" id="s_keyhint" style="margin-top:4px"></div>
+    </div>
+    <div class="opts">
+      <div>
+        <label>Modèle Whisper</label>
+        <select id="s_model">
+          <option value="tiny">tiny (très rapide)</option>
+          <option value="base">base (rapide)</option>
+          <option value="small">small (équilibré)</option>
+          <option value="medium">medium (précis, lent)</option>
+          <option value="large-v3">large-v3 (le plus précis)</option>
+        </select>
+      </div>
+      <div>
+        <label>Langue de la vidéo</label>
+        <select id="s_lang">
+          <option value="fr">Français</option><option value="en">Anglais</option>
+          <option value="es">Espagnol</option><option value="">Détection auto</option>
+        </select>
+      </div>
+    </div>
+    <div>
+      <label>Cookies YouTube (si YouTube bloque les téléchargements)</label>
+      <div class="row">
+        <button onclick="document.getElementById('s_cookies').click()">📄 Envoyer cookies.txt</button>
+        <button class="ghost small" id="s_cookies_del" onclick="delCookies()">Supprimer</button>
+      </div>
+      <input type="file" id="s_cookies" accept=".txt" hidden onchange="sendCookies(this.files[0])">
+      <div class="small mute" id="s_cookies_hint" style="margin-top:4px"></div>
+    </div>
+    <div class="row" style="justify-content:flex-end">
+      <button onclick="closeSettings()">Annuler</button>
+      <button class="primary" onclick="saveSettings()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+let CONFIG = null, CUR = null, PROJECT = null, TRANSCRIPT = null, POLL = null, SAVE_T = null;
+let SELECTED = new Set(), STOP_AT = null;
+const OPTS_KEY = "shortmaker_opts";
+let OPTS = Object.assign({style:"karaoke", highlight:"#FFE600", uppercase:true, position:"bas",
+  reframe:"face", progress_bar:true, show_hook:true}, JSON.parse(localStorage.getItem(OPTS_KEY) || "{}"));
+
+const fmt = t => { t = Math.max(0, +t || 0); const m = Math.floor(t / 60); return `${String(m).padStart(2,"0")}:${(t - m*60).toFixed(1).padStart(4,"0")}`; };
+const parse = s => { s = String(s).trim().replace(",", "."); if (!s.includes(":")) return +s || 0;
+  const p = s.split(":").map(Number); return p.length === 3 ? p[0]*3600 + p[1]*60 + p[2] : p[0]*60 + p[1]; };
+
+async function api(path, opts = {}) {
+  const r = await fetch(path, {headers: {"Content-Type": "application/json"}, ...opts});
+  if (r.status === 401) { location.href = "/login"; throw new Error("Non connecté"); }
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(data.error || `Erreur ${r.status}`);
+  return data;
+}
+
+/* ------------------------------------------------------------------ réglages */
+async function loadConfig() { CONFIG = await api("/api/config");
+  $("#btnQuit").style.display = $("#btnReveal").style.display = CONFIG.can_quit ? "" : "none"; }
+async function quitApp() { if (!confirm("Fermer ShortMaker ?")) return;
+  await api("/api/quit", {method: "POST"}).catch(() => {});
+  document.body.innerHTML = '<div class="empty"><div><b>ShortMaker est fermé</b>Tu peux fermer cet onglet.</div></div>'; }
+function openSettings() {
+  $("#s_key").value = ""; $("#s_model").value = CONFIG.whisper_model; $("#s_lang").value = CONFIG.language;
+  $("#s_keyhint").textContent = CONFIG.has_api_key ? `Clé enregistrée : ${CONFIG.api_key_hint}` : "Aucune clé enregistrée. Crée-en une sur console.anthropic.com.";
+  cookiesHint();
+  $("#settings").classList.add("open");
+}
+function cookiesHint() {
+  $("#s_cookies_hint").textContent = CONFIG.has_cookies ? "✓ Cookies enregistrés." :
+    "Facultatif. Exporte-les depuis ton navigateur avec l'extension « Get cookies.txt LOCALLY », sur youtube.com.";
+  $("#s_cookies_del").style.display = CONFIG.has_cookies ? "" : "none";
+}
+async function sendCookies(file) {
+  if (!file) return; const fd = new FormData(); fd.append("file", file);
+  const r = await fetch("/api/cookies", {method: "POST", body: fd}); const d = await r.json();
+  $("#s_cookies").value = ""; if (!r.ok) return alert(d.error); CONFIG = d; cookiesHint();
+}
+async function delCookies() { CONFIG = await api("/api/cookies", {method: "DELETE"}); cookiesHint(); }
+function closeSettings() { $("#settings").classList.remove("open"); }
+async function saveSettings() {
+  CONFIG = await api("/api/config", {method: "POST", body: JSON.stringify({
+    api_key: $("#s_key").value, whisper_model: $("#s_model").value, language: $("#s_lang").value})});
+  closeSettings(); if (PROJECT) renderProject();
+}
+
+/* ------------------------------------------------------------------ projets */
+async function loadProjects() {
+  const list = await api("/api/projects");
+  $("#plist").innerHTML = list.map(p => {
+    const st = p.status === "ready" ? "ready" : p.status === "error" ? "error" : "busy";
+    return `<div class="pitem ${p.id === CUR ? "active" : ""}" onclick="openProject('${p.id}')">
+      <span class="dot ${st}"></span><span class="t grow">${esc(p.title)}</span>
+      <button class="ghost small" title="Supprimer" onclick="event.stopPropagation();delProject('${p.id}')">✕</button></div>`;
+  }).join("") || `<div class="small mute" style="padding:0 4px">Aucune vidéo pour l'instant.</div>`;
+}
+async function importUrl() {
+  const url = $("#url").value.trim(); if (!url) return;
+  const rs = $("#r_start").value.trim(), re = $("#r_end").value.trim();
+  const body = {url, start: rs ? parse(rs) : null, end: re ? parse(re) : null};
+  try { const p = await api("/api/projects", {method: "POST", body: JSON.stringify(body)});
+    $("#url").value = $("#r_start").value = $("#r_end").value = ""; await loadProjects(); openProject(p.id); } catch (e) { alert(e.message); }
+}
+function importFile(file) {
+  if (!file) return;
+  const fd = new FormData(); fd.append("file", file);
+  const xhr = new XMLHttpRequest(); xhr.open("POST", "/api/projects");
+  xhr.upload.onprogress = e => $("#upload").textContent = `Envoi… ${Math.round(e.loaded / e.total * 100)} %`;
+  xhr.onload = async () => { $("#upload").textContent = ""; $("#file").value = "";
+    if (xhr.status === 401) return location.href = "/login";
+    const p = JSON.parse(xhr.responseText); if (xhr.status !== 200) return alert(p.error);
+    await loadProjects(); openProject(p.id); };
+  xhr.send(fd);
+}
+async function delProject(id) {
+  if (!confirm("Supprimer cette vidéo et ses shorts ?")) return;
+  await api(`/api/projects/${id}`, {method: "DELETE"});
+  if (id === CUR) { CUR = PROJECT = null; $("#main").innerHTML = ""; }
+  loadProjects();
+}
+async function openProject(id) {
+  CUR = id; TRANSCRIPT = null; SELECTED = new Set(); loadProjects();
+  await refresh(true);
+}
+async function refresh(full = false) {
+  if (!CUR) return;
+  const id = CUR;
+  const p = await api(`/api/projects/${id}${!TRANSCRIPT ? "?transcript=1" : ""}`);
+  if (id !== CUR) return;
+  if (p.transcript) TRANSCRIPT = p.transcript;
+  const prev = PROJECT; PROJECT = p;
+  const statusChanged = !prev || prev.id !== p.id || prev.status !== p.status;
+  const taskEnded = prev && prev.task && !p.task;
+  const outputsChanged = prev && JSON.stringify((prev.clips||[]).map(c => c.output)) !== JSON.stringify((p.clips||[]).map(c => c.output));
+  const clipsChanged = prev && JSON.stringify((prev.clips||[]).map(c => c.id)) !== JSON.stringify((p.clips||[]).map(c => c.id));
+  if (full || statusChanged) renderProject();
+  else { renderTask(); if (taskEnded || clipsChanged) renderClips(); if (outputsChanged || taskEnded) renderOutputs(); }
+  if (statusChanged && prev) loadProjects();
+  clearTimeout(POLL);
+  const busy = !["ready", "error"].includes(p.status) || (p.task && !p.task.error);
+  if (busy) POLL = setTimeout(() => refresh(), 1500);
+}
+
+/* ------------------------------------------------------------------ vue projet */
+function renderProject() {
+  const p = PROJECT, m = $("#main");
+  if (p.status === "error") {
+    m.innerHTML = `<div class="card"><h3>${esc(p.title)}</h3><div class="err">${esc(p.error)}</div>
+      <div class="row" style="margin-top:12px"><button class="primary" onclick="retry()">Réessayer</button></div></div>`;
+    return;
+  }
+  if (p.status !== "ready") {
+    m.innerHTML = `<div class="card" style="max-width:640px"><h3>${esc(p.title)}</h3><div id="task"></div>
+      <p class="small mute">Tu peux laisser l'app tourner : la transcription peut prendre quelques minutes selon la longueur de la vidéo et ton ordinateur.</p></div>`;
+    renderTask(); return;
+  }
+  m.innerHTML = `
+  <div class="section-title"><h2 style="margin:0;font-size:18px">${esc(p.title)}</h2><span class="small mute">${fmt(p.duration)} · ${esc(p.language || "")}</span></div>
+  <div class="grid2">
+    <div class="stack">
+      <div class="card">
+        <video class="src" id="player" src="/media/${p.id}/${p.source}" controls preload="metadata"></video>
+        <div class="small mute" style="margin-top:10px">Clique sur un mot pour t'y rendre. Sélectionne un passage du texte pour en faire un clip.</div>
+        <div class="transcript" id="transcript"></div>
+      </div>
+      <div class="card"><div class="section-title"><h3>Shorts générés</h3></div><div id="outs"></div></div>
+    </div>
+    <div class="stack">
+      <div class="card">
+        <h3>✨ Suggestions de l'IA</h3>
+        <div class="opts" style="grid-template-columns:1fr 1fr 1fr">
+          <div><label>Nombre</label><input id="g_count" type="number" value="5" min="1" max="15"></div>
+          <div><label>Durée min (s)</label><input id="g_min" type="number" value="20"></div>
+          <div><label>Durée max (s)</label><input id="g_max" type="number" value="60"></div>
+        </div>
+        <div style="margin-top:10px"><label>Consignes (facultatif)</label>
+          <input id="g_instr" placeholder="ex. privilégie les conseils concrets, évite les passages techniques"></div>
+        <div class="row" style="margin-top:10px">
+          <button class="primary" id="btnSuggest" onclick="suggest()">Trouver les moments forts</button>
+          <span class="small mute" id="keyWarn"></span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="section-title"><h3>Moments sélectionnés</h3>
+          <button onclick="addClip()">+ Ajouter</button></div>
+        <div id="task"></div>
+        <div class="clips" id="clips"></div>
+      </div>
+      <div class="card">
+        <h3>🎨 Style des shorts</h3>
+        <div class="opts">
+          <div><label>Sous-titres</label><select id="o_style">${Object.entries(CONFIG.styles).map(([k,v]) => `<option value="${k}">${esc(v)}</option>`).join("")}</select></div>
+          <div><label>Couleur d'accent</label><input id="o_highlight" type="color"></div>
+          <div><label>Position du texte</label><select id="o_position"><option value="bas">Bas</option><option value="milieu">Milieu</option><option value="haut">Haut</option></select></div>
+          <div><label>Recadrage 9:16</label><select id="o_reframe"><option value="face">Suit le visage</option><option value="center">Centre fixe</option><option value="blur">Vidéo entière + fond flou</option></select></div>
+        </div>
+        <div class="row" style="flex-wrap:wrap;gap:16px;margin-top:12px">
+          <label class="toggle"><input type="checkbox" id="o_uppercase"> MAJUSCULES</label>
+          <label class="toggle"><input type="checkbox" id="o_show_hook"> Accroche en haut</label>
+          <label class="toggle"><input type="checkbox" id="o_progress_bar"> Barre de progression</label>
+        </div>
+        <button class="primary" id="btnRender" style="width:100%;margin-top:14px" onclick="renderShorts()">Générer les shorts</button>
+      </div>
+    </div>
+  </div>`;
+  for (const k of Object.keys(OPTS)) {
+    const el = $("#o_" + k); if (!el) continue;
+    if (el.type === "checkbox") el.checked = OPTS[k]; else el.value = OPTS[k];
+    el.onchange = () => { OPTS[k] = el.type === "checkbox" ? el.checked : el.value; localStorage.setItem(OPTS_KEY, JSON.stringify(OPTS)); };
+  }
+  $("#keyWarn").textContent = CONFIG.has_api_key ? "" : "⚠️ Ajoute ta clé API dans Réglages";
+  renderTranscript(); renderClips(); renderOutputs(); renderTask();
+  const player = $("#player");
+  player.ontimeupdate = () => { highlightWord(player.currentTime);
+    if (STOP_AT !== null && player.currentTime >= STOP_AT) { player.pause(); STOP_AT = null; } };
+}
+
+function renderTask() {
+  const el = $("#task"); if (!el || !PROJECT) return;
+  const t = PROJECT.task;
+  const busy = t && !t.error;
+  ["#btnSuggest", "#btnRender"].forEach(s => { const b = $(s); if (b) b.disabled = !!busy; });
+  if (!t) { el.innerHTML = ""; return; }
+  if (t.error) { el.innerHTML = `<div class="err" style="margin-bottom:10px">${esc(t.error)}<div style="margin-top:8px"><button class="small" onclick="dismiss()">OK</button></div></div>`; return; }
+  el.innerHTML = `<div style="margin-bottom:12px"><div class="small">${esc(t.message)}</div><div class="bar"><i style="width:${Math.round(t.progress*100)}%"></i></div></div>`;
+}
+
+/* ------------------------------------------------------------------ transcription */
+function renderTranscript() {
+  const el = $("#transcript"); if (!el || !TRANSCRIPT) return;
+  let i = 0;
+  el.innerHTML = TRANSCRIPT.segments.map(s => `<div><span class="ts">${fmt(s.start)}</span>` +
+    (s.words.length ? s.words : [{start:s.start,end:s.end,word:s.text}]).map(w =>
+      `<span class="w" data-i="${i++}" data-s="${w.start}" data-e="${w.end}">${esc(w.word)}</span>`).join(" ") + `</div>`).join("");
+  el.onclick = e => { const w = e.target.closest(".w"); if (w && window.getSelection().isCollapsed) seek(+w.dataset.s); };
+  markClipWords();
+}
+let LAST_NOW = null;
+function highlightWord(t) {
+  const el = $("#transcript"); if (!el) return;
+  const words = el.querySelectorAll(".w");
+  let lo = 0, hi = words.length - 1, found = null;
+  while (lo <= hi) { const mid = (lo + hi) >> 1, w = words[mid];
+    if (t < +w.dataset.s) hi = mid - 1; else if (t > +w.dataset.e) lo = mid + 1; else { found = w; break; } }
+  if (found === LAST_NOW) return;
+  LAST_NOW && LAST_NOW.classList.remove("now"); LAST_NOW = found;
+  if (found) { found.classList.add("now");
+    const r = found.getBoundingClientRect(), c = el.getBoundingClientRect();
+    if (r.top < c.top || r.bottom > c.bottom) el.scrollTop += r.top - c.top - c.height / 3; }
+}
+function markClipWords() {
+  const el = $("#transcript"); if (!el || !PROJECT) return;
+  const ranges = (PROJECT.clips || []).map(c => [c.start, c.end]);
+  el.querySelectorAll(".w").forEach(w => { const s = +w.dataset.s;
+    w.classList.toggle("inclip", ranges.some(([a, b]) => s >= a && s < b)); });
+}
+function seek(t, stop = null) { const p = $("#player"); if (!p) return; p.currentTime = t; STOP_AT = stop; p.play(); }
+
+document.addEventListener("selectionchange", () => {
+  const btn = $("#selBtn"), sel = window.getSelection(), tr = $("#transcript");
+  if (!tr || sel.isCollapsed || !tr.contains(sel.anchorNode)) { btn.style.display = "none"; return; }
+  const r = sel.getRangeAt(0).getBoundingClientRect();
+  btn.style.display = "block"; btn.style.left = `${r.left + r.width / 2 - 60}px`; btn.style.top = `${r.bottom + 8}px`;
+});
+function clipFromSelection() {
+  const sel = window.getSelection(); if (sel.isCollapsed) return;
+  const range = sel.getRangeAt(0);
+  const words = [...$("#transcript").querySelectorAll(".w")].filter(w => range.intersectsNode(w));
+  if (!words.length) return;
+  const start = Math.max(0, +words[0].dataset.s - 0.15), end = +words[words.length - 1].dataset.e + 0.3;
+  sel.removeAllRanges(); $("#selBtn").style.display = "none";
+  pushClip({start, end, title: words.slice(0, 6).map(w => w.textContent).join(" ") + "…", hook: ""});
+}
+
+/* ------------------------------------------------------------------ clips */
+function renderClips() {
+  const el = $("#clips"); if (!el) return;
+  const clips = PROJECT.clips || [];
+  el.innerHTML = clips.map((c, i) => `
+    <div class="clip ${SELECTED.has(c.id) ? "sel" : ""}" data-id="${c.id}">
+      <div class="head">
+        <input type="checkbox" style="width:auto" ${SELECTED.has(c.id) ? "checked" : ""} onchange="toggleSel('${c.id}', this.checked)" title="Inclure dans le prochain rendu">
+        <input class="grow" value="${esc(c.title)}" placeholder="Titre" oninput="editClip('${c.id}','title',this.value)">
+        ${c.score ? `<span class="score">${c.score}</span>` : ""}
+        <button class="ghost" title="Supprimer" onclick="removeClip('${c.id}')">✕</button>
+      </div>
+      <input value="${esc(c.hook)}" placeholder="Accroche affichée en haut (facultatif)" oninput="editClip('${c.id}','hook',this.value)">
+      <div class="times">
+        <input value="${fmt(c.start)}" onchange="editClip('${c.id}','start',parse(this.value))" title="Début">
+        <button class="ghost" title="Début = position actuelle de la vidéo" onclick="setNow('${c.id}','start')">⏱</button>
+        <input value="${fmt(c.end)}" onchange="editClip('${c.id}','end',parse(this.value))" title="Fin">
+        <button class="ghost" title="Fin = position actuelle de la vidéo" onclick="setNow('${c.id}','end')">⏱</button>
+      </div>
+      <div class="row small">
+        <button class="small" onclick="seek(${c.start}, ${c.end})">▶ Écouter (${Math.round(c.end - c.start)} s)</button>
+        ${c.output ? `<span class="mute">✓ short généré</span>` : ""}
+      </div>
+      ${c.reason ? `<div class="reason">💡 ${esc(c.reason)}</div>` : ""}
+    </div>`).join("") || `<div class="small mute">Aucun moment pour l'instant. Demande des suggestions à l'IA, sélectionne un passage dans la transcription, ou clique sur « + Ajouter ».</div>`;
+  updateRenderBtn(); markClipWords();
+}
+function updateRenderBtn() {
+  const b = $("#btnRender"); if (!b) return;
+  const n = SELECTED.size || (PROJECT.clips || []).length;
+  b.textContent = SELECTED.size ? `Générer ${n} short${n > 1 ? "s" : ""} sélectionné${n > 1 ? "s" : ""}` : `Générer tous les shorts (${n})`;
+}
+function toggleSel(id, on) { on ? SELECTED.add(id) : SELECTED.delete(id);
+  document.querySelector(`.clip[data-id="${id}"]`).classList.toggle("sel", on); updateRenderBtn(); }
+function editClip(id, field, value) {
+  const c = PROJECT.clips.find(c => c.id === id); if (!c) return;
+  c[field] = value;
+  if (field === "start" || field === "end") renderClips();
+  queueSave();
+}
+function setNow(id, field) { const t = $("#player").currentTime; editClip(id, field, +t.toFixed(2)); }
+function addClip() { const t = $("#player")?.currentTime || 0;
+  pushClip({start: +t.toFixed(2), end: +Math.min(t + 30, PROJECT.duration).toFixed(2), title: "Nouveau clip", hook: ""}); }
+async function pushClip(c) {
+  PROJECT.clips = [...(PROJECT.clips || []), c];
+  const p = await api(`/api/projects/${CUR}/clips`, {method: "PUT", body: JSON.stringify({clips: PROJECT.clips})});
+  PROJECT.clips = p.clips; SELECTED.add(p.clips[p.clips.length - 1].id); renderClips();
+}
+async function removeClip(id) {
+  PROJECT.clips = PROJECT.clips.filter(c => c.id !== id); SELECTED.delete(id);
+  renderClips(); await saveNow(); renderOutputs();
+}
+function queueSave() { clearTimeout(SAVE_T); SAVE_T = setTimeout(saveNow, 500); }
+async function saveNow() { clearTimeout(SAVE_T);
+  await api(`/api/projects/${CUR}/clips`, {method: "PUT", body: JSON.stringify({clips: PROJECT.clips})}); }
+
+/* ------------------------------------------------------------------ actions */
+async function suggest() {
+  if (!CONFIG.has_api_key) return openSettings();
+  try { await api(`/api/projects/${CUR}/suggest`, {method: "POST", body: JSON.stringify({
+      count: $("#g_count").value, min_len: $("#g_min").value, max_len: $("#g_max").value, instructions: $("#g_instr").value})});
+    refresh(); } catch (e) { alert(e.message); }
+}
+async function renderShorts() {
+  const ids = SELECTED.size ? [...SELECTED] : (PROJECT.clips || []).map(c => c.id);
+  if (!ids.length) return alert("Ajoute d'abord au moins un moment.");
+  const bad = PROJECT.clips.filter(c => ids.includes(c.id) && c.end <= c.start);
+  if (bad.length) return alert(`Le clip « ${bad[0].title} » a une fin avant son début.`);
+  await saveNow();
+  try { await api(`/api/projects/${CUR}/render`, {method: "POST", body: JSON.stringify({clip_ids: ids, options: OPTS})}); refresh(); }
+  catch (e) { alert(e.message); }
+}
+async function dismiss() { await api(`/api/projects/${CUR}/dismiss`, {method: "POST"}); refresh(); }
+async function retry() { await api(`/api/projects/${CUR}/retry`, {method: "POST"}); refresh(true); }
+
+function renderOutputs() {
+  const el = $("#outs"); if (!el) return;
+  const done = (PROJECT.clips || []).filter(c => c.output);
+  el.innerHTML = done.length ? `<div class="outs">${done.map(c => `
+    <div class="out"><video src="/media/${PROJECT.id}/clips/${c.output}" controls preload="metadata"></video>
+      <div class="t" title="${esc(c.title)}">${esc(c.title)}</div>
+      <a href="/media/${PROJECT.id}/clips/${c.output}?dl=1" download><button class="small" style="width:100%">⬇ Télécharger</button></a></div>`).join("")}</div>`
+    : `<div class="small mute">Les shorts apparaîtront ici après le rendu.</div>`;
+}
+
+loadConfig().then(loadProjects);
+</script>
+</body>
+</html>

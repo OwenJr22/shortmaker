@@ -1,0 +1,6 @@
+Police utilisée pour les sous-titres : Poppins Bold (Indian Type Foundry),
+sous licence SIL Open Font License 1.1 — https://openfontlicense.org
+
+Tu peux ajouter d'autres polices .ttf/.otf dans ce dossier. Pour en utiliser
+une autre, change la variable FONT dans pipeline/subtitles.py par le nom de
+la famille (ex. "Montserrat") et dépose la version Bold ici.

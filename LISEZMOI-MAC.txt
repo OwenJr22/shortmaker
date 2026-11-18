@@ -1,0 +1,33 @@
+SHORTMAKER POUR MAC — mode d'emploi
+===================================
+
+INSTALLATION (une seule fois)
+1. Double-clique sur ShortMaker-Mac.zip pour le décompresser.
+2. Glisse ShortMaker.app dans ton dossier Applications.
+3. Premier lancement : macOS va bloquer l'app, car elle n'est pas signée
+   par un éditeur payant chez Apple. C'est normal. Pour l'autoriser :
+   - double-clique sur ShortMaker, puis clique sur « OK » ou « Terminé » dans le message ;
+   - ouvre Réglages Système → Confidentialité et sécurité ;
+   - descends tout en bas, puis clique sur « Ouvrir quand même » à côté de ShortMaker ;
+   - confirme avec ton mot de passe.
+   Si ça ne marche pas, ouvre l'app Terminal et colle cette ligne, puis Entrée :
+       xattr -cr /Applications/ShortMaker.app
+   Ensuite, ShortMaker s'ouvre normalement.
+
+UTILISATION
+- Double-clique sur ShortMaker : ton navigateur s'ouvre sur la page de l'app.
+  Il n'y a pas de fenêtre : l'app tourne en arrière-plan.
+- Colle un lien YouTube, Twitch ou Kick. Pour une VOD longue, utilise
+  « Seulement un extrait » : c'est beaucoup plus rapide.
+- La toute première transcription télécharge le modèle Whisper (environ 500 Mo).
+- Suggestions IA : ⚙️ Réglages → colle ta clé API Claude (console.anthropic.com).
+- Pour fermer l'app : bouton ⏻ Quitter en haut à droite de la page.
+- Pour la rouvrir : double-clique de nouveau sur ShortMaker.
+
+TES FICHIERS
+Les projets et les shorts sont rangés dans : Vidéos (Movies) → ShortMaker.
+Le bouton 📂 Mes fichiers l'ouvre directement.
+En cas de souci, le fichier journal.txt de ce dossier contient les détails de l'erreur.
+
+N'utilise que des vidéos dont tu as les droits ou l'accord du créateur.
+FFmpeg (inclus) est distribué sous licence GPL — https://ffmpeg.org
